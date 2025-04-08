@@ -1,0 +1,76 @@
+defaults:
+  - geoids_split_corn
+
+_target_: src.datasets.datamodule.DataModule
+task: 'crop_yield_prep'
+data_dir: ${paths.data_dir}/prep_datasets/prep_yield_modis_corn_float32/
+batch_size: 64 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
+num_workers: 12
+pin_memory: False
+seed: ${seed}
+return_meta_data: False
+handle_nans: 'none'
+crop: 'corn'
+years: [2018, 2019, 2020, 2021, 2022]
+
+bands:
+  modis: ['sur_refl_b01','sur_refl_b02','sur_refl_b03','sur_refl_b04','sur_refl_b06']
+  daymet: ['tmax', 'tmin', 'prcp', 'vp', 'srad']
+  dem: ['elevation', 'slope', 'aspect', 'curvature']
+  soil: ['bulk_density','cec','clay','ph','sand','silt','soc']
+
+transformations:
+  x:
+    clip:
+      _target_: src.datasets.transforms.Clip
+      method: 'threshold'
+      channel_dim: -3
+      channels: [0,1,2,3,4]
+      # z=2.5
+      min: [0,0,0,0,0.0361]
+      max: [0.5732,0.6624,0.5461,0.5586,0.4687]
+    scale:
+      _target_: src.datasets.transforms.MinMaxScaler
+      channel_dim: -3
+      scale_min: 0
+      scale_max: 1
+      data_min:
+        _target_: src.datasets.dataset_stats.load_from_file
+        fn: min_max.json
+        data_dir: ${paths.data_dir}
+        bands: ${data.bands}
+        return_tuple: 0
+        overwrite:
+          - [0,5]
+          - ${data.transformations.x.clip.min}
+          - ${data.transformations.x.clip.max} # overwrite the 5 values from RS with clip values
+      data_max:
+        _target_: src.datasets.dataset_stats.load_from_file
+        fn: min_max.json
+        data_dir: ${paths.data_dir}
+        bands: ${data.bands}
+        return_tuple: 1
+        overwrite:
+          - [0,5]
+          - ${data.transformations.x.clip.min}
+          - ${data.transformations.x.clip.max} # overwrite the 5 values from RS with clip values
+    HandleNans:
+      _target_: src.datasets.transforms.ReplaceValue
+  y:
+    scale:
+      _target_: src.datasets.transforms.MinMaxScaler
+      data_min:
+        _target_: src.datasets.dataset_stats.load_from_file
+        fn: corn_min_max.json
+        data_dir: ${paths.data_dir}
+        bands: {'yield': [None]}
+        return_tuple: 0
+      data_max:
+        _target_: src.datasets.dataset_stats.load_from_file
+        fn: corn_min_max.json
+        data_dir: ${paths.data_dir}
+        bands: {'yield': [None]}
+        return_tuple: 1
+      channel_dim: 0
+      scale_min: 0
+      scale_max: 1

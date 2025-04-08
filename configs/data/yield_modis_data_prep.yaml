@@ -1,0 +1,46 @@
+defaults:
+  - geoids_split_corn
+  # - geoids_split_oats
+  # - geoids_split_soybeans
+  # - geoids_split_cotton
+  # - geoids_split_winter_wheat
+
+_target_: src.datasets.datamodule.DataModule
+task: 'crop_yield'
+data_dir: ${paths.data_dir}
+batch_size: 16 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
+num_workers: 16
+pin_memory: False
+persistent_workers: False
+seed: ${seed}
+
+crops: 'corn'
+time_range: ['04-01', '11-30']
+# crops: 'oats'
+# time_range: ['04-01', '09-30']
+# crops: 'soybeans'
+# time_range: ['05-01', '10-31']
+# crops: 'cotton'
+# time_range: ['04-01', '12-31']
+# crops: 'winter_wheat'
+# time_range: ['09-01', '08-31']
+# years: [2019, 2020, 2021, 2022] # only for winter wheat, because it was planted the year before (no data for 2018)
+
+years: [2018, 2019, 2020, 2021, 2022]
+bands:
+  modis: ['sur_refl_b01','sur_refl_b02','sur_refl_b03','sur_refl_b04','sur_refl_b06']
+  daymet: ['tmax', 'tmin', 'prcp', 'vp', 'srad']
+  dem: ['elevation', 'slope', 'aspect', 'curvature']
+  soil: ['bulk_density','cec','clay','ph','sand','silt','soc']
+
+filter_by_crops: False
+use_county_mask: True # remove minicube data outside of the county
+cdl_30m: False # switch between 30m and 500m cdl
+spatial_splitting: 0 # e.g. 4 means split 1 minicube into 4 minicubes (for example: 600x600 -> 300x300)
+return_meta_data: False
+return_label_data: True
+handle_nans: 'none'
+resampling:
+  default:
+    spatial: {'method': 'linear/mean', 'size': 'master'}
+    temporal: {'method': 'linear/mean', 'size': 'master'}  

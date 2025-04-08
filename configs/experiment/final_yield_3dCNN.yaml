@@ -1,0 +1,61 @@
+# @package _global_
+
+defaults:
+ - override /model: metrics_yield # standard metrics for yield
+ - override /data: prep_yield_modis
+ - override /callbacks: default
+ - override /trainer: default
+
+ckpt_path: null
+
+model:
+  _target_: src.models.lightning_wrapper.YieldLightningWrapper
+  net:
+    _target_: src.models.cnn.SimpleConvNet
+    n_input_channels:
+      _target_: src.utils.utils.get_length
+      obj: ${data.bands}
+    activation:
+        _target_: torch.nn.ReLU
+    batch_norms: True
+    conv_type: conv3d
+    out_channels: [32, 16]
+    kernel_sizes: [2, 2]
+    strides: 1
+    dilations: 1
+    pool_strides: [null, 4]
+    poolings: [null, 4]
+    pool_dilation: 1
+    pool_type: max
+    flatten: true
+    linear:
+      _target_: src.models.simple_dense_net.SimpleDenseNet
+      batch_norm: false
+      dropout: 0.3
+      final_function: null
+      layer_norm: false
+      layers: [2800, 1]
+
+  output_activation_function:
+    _target_: torch.nn.Sigmoid
+  
+  optimizer:
+    _target_: torch.optim.Adam
+    _partial_: true
+    lr: 0.001
+    weight_decay: 0.
+
+  scheduler:
+    _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+    _partial_: true
+    mode: min
+    cooldown: 1
+    factor: 0.8
+    patience: 4
+
+seed:
+  42
+trainer:
+  max_epochs: 100
+  accumulate_grad_batches: 2
+  precision: 16-mixed

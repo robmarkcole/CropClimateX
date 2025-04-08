@@ -1,0 +1,15 @@
+# @package _global_
+
+# uses only 2 of the training data and 1 of validation/test data batches
+
+defaults:
+  - default
+
+data:
+  batch_size: 4
+
+trainer:
+  max_epochs: 2
+  limit_train_batches: 2
+  limit_val_batches: 1
+  limit_test_batches: 1

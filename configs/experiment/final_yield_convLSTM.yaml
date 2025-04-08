@@ -1,0 +1,60 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=<name>
+defaults:
+  - override /model: metrics_yield # standard metrics for yield
+  - override /data: prep_yield_modis
+  - override /callbacks: default
+  - override /trainer: default
+
+ckpt_path: null
+
+model:
+  _target_: src.models.lightning_wrapper.YieldLightningWrapper
+  net:
+    _target_: src.models.convLSTM.ConvLSTM
+    input_size: [24,24] # (height, width)
+    input_dim: # number channels
+      _target_: src.utils.utils.get_length
+      obj: ${data.bands}
+    hidden_dim: 64 # number channels in hidden state
+    num_layers: 2
+    kernel_size: [3,3]
+    bias: True
+    use_bn: False
+    dropout: 0.1
+    return_sequence: False
+    final_module:
+      _target_: src.models.base.SequentialNet
+      blocks:
+        # global pooling with 3d
+        - _target_: torch.nn.AdaptiveAvgPool3d
+          output_size: [8,8,8]
+        - _target_: src.models.simple_dense_net.SimpleDenseNet
+          layers: [512, 1]
+          dropout: 0.2
+          batch_norm: True
+          layer_norm: False
+
+  output_activation_function:
+      _target_: torch.nn.Sigmoid
+  scheduler:
+      _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+      _partial_: true
+      mode: min
+      cooldown: 1
+      factor: 0.8
+      patience: 4
+  optimizer:
+      _target_: torch.optim.Adam
+      _partial_: true
+      lr: 0.001
+      weight_decay: 0.0
+
+seed:
+    42
+trainer:
+    max_epochs: 100
+    accumulate_grad_batches: 2
+    precision: 16-mixed

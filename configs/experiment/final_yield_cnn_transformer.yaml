@@ -1,0 +1,70 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=<name>
+defaults:
+  - override /model: metrics_yield # standard metrics for yield
+  - override /data: prep_yield_modis
+  - override /callbacks: default
+  - override /trainer: default
+
+ckpt_path: null
+
+model:
+  _target_: src.models.lightning_wrapper.YieldLightningWrapper
+  net:
+    _target_: src.models.spatial_temporal_nn.SpatialTemporalNN
+    spatial:
+      _target_: src.models.cnn.SimpleConvNet
+      n_input_channels:
+        _target_: src.utils.utils.get_length
+        obj: ${data.bands}
+      activation:
+        _target_: torch.nn.Identity
+      batch_norms: true
+      out_channels: [64, 64, 32]
+      kernel_sizes: [3, 3, 3]
+      dilations: 1
+      strides: 1
+      poolings: [0, 0, 4]
+      pool_strides: [0,0, 4]
+      pool_dilation: 1
+      pool_type: max
+      linear: null
+      flatten: true
+    activation:
+      _target_: torch.nn.Identity
+    temporal:
+      _target_: src.models.transformer.TransformerEnc
+      d_model: 512
+      dim_feedforward: 128
+      dropout: 0.1
+      layer_norm: true
+      nhead: 16
+      num_layers: 2
+    final_nn:
+      _target_: torch.nn.Linear
+      in_features: ${model.net.temporal.d_model}
+      out_features: 1
+
+  output_activation_function:
+    _target_: torch.nn.Sigmoid
+  scheduler:
+    _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+    _partial_: true
+    mode: min
+    cooldown: 1
+    factor: 0.8
+    patience: 4
+  optimizer:
+    _target_: torch.optim.Adam
+    _partial_: true
+    lr: 0.001
+    weight_decay: 0.
+
+seed:
+    42
+trainer:
+    max_epochs: 100
+    accumulate_grad_batches: 2
+    precision: 16-mixed
