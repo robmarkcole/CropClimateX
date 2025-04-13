@@ -3,7 +3,7 @@ defaults:
 
 _target_: src.datasets.datamodule.DataModule
 task: 'extremes_prep'
-data_dir: ${paths.data_dir}/prep_datasets/npy_drought_landsat_uint16/
+data_dir: ${paths.data_dir}/prep_datasets/prep_drought_landsat_uint16/
 batch_size: 64 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
 num_workers: 10
 persistent_workers: False

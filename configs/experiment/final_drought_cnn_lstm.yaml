@@ -65,3 +65,4 @@ seed:
 trainer:
     max_epochs: 60
     precision: 16-mixed
+    accumulate_grad_batches: 2
