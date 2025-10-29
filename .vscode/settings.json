@@ -1,6 +1,7 @@
 {
     "explorer.excludeGitIgnore": false,
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-    "python.venvPath": "${workspaceFolder}/.venv",
+    "jupyter.interactiveWindow.creationMode": "perFile",
+    "jupyter.kernels.excludePythonEnvironments": [],
     "python.terminal.activateEnvironment": true
   }
