@@ -35,8 +35,8 @@ pip install -r requirements.txt
 or install with uv and exact python version:
 ```
 pip install uv # install package manager
-uv venv .venv/venv1 --python 3.10.13
-source .venv/venv1/bin/activate
+uv venv --python 3.10.13
+source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 ### Reproducing experiments
